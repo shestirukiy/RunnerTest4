@@ -1,6 +1,7 @@
 import { _decorator, Component, Node, Vec3, Label, input, Input, EventMouse, EventTouch, Animation, Collider2D, Contact2DType, IPhysics2DContact } from 'cc';
 import { GameManager } from './GameManager'; // путь к GameManager.ts
 import { GameOverUI } from './GameOverUI';   // импорт класса UI
+import { ScoreManager } from './ScoreManager';
 const { ccclass, property } = _decorator;
 
 @ccclass('Player')
@@ -10,6 +11,9 @@ export class Player extends Component {
 
     @property(Animation)
     anim: Animation | null = null;          // анимация персонажа
+
+    @property(ScoreManager)
+    scoreManager: ScoreManager | null = null;
 
     @property(Node)
     gameOverPanel: Node | null = null;      // нода панели Game Over
@@ -115,28 +119,23 @@ onJump(event: EventTouch | EventMouse) {
         }, 1);
     }
 
-    private gameOver() {
+private gameOver() {
     console.log("GAME OVER");
 
     this.isGameOver = true;
-
-    // остановить игру глобально
     GameManager.gameStarted = false;
-
-    // остановить движение
     this.isJumping = false;
     this.jumpVelocity = 0;
 
-    // показать панель Game Over
     if (this.gameOverPanel) {
+        this.gameOverPanel.active = true;
+
         const ui = this.gameOverPanel.getComponent(GameOverUI);
-        
-        // 🔹 берем очки из ScoreManager
-        const finalScore = this.node.scene.getComponentInChildren(ScoreManager)?.getScore() ?? 0;
-        ui?.show(finalScore);
+        if (ui) {
+            ui.show(0);  // можно передать что угодно, оно не используется
+        }
     }
 
-    // поставить Idle анимацию
     if (this.anim) {
         this.anim.play('GopIdleAnim');
     }

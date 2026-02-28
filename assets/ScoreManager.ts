@@ -15,5 +15,7 @@ export class ScoreManager extends Component {
         if (this.scoreLabel) {
             this.scoreLabel.string = "₽: " + this.score;
         }
+        
     }
+    
 }
