@@ -1,7 +1,8 @@
 import { _decorator, Component, Node, Vec3, Label, input, Input, EventMouse, EventTouch, Animation, Collider2D, Contact2DType, IPhysics2DContact } from 'cc';
-import { GameManager } from './GameManager'; // путь к GameManager.ts
-import { GameOverUI } from './GameOverUI';   // импорт класса UI
+import { GameManager } from './GameManager'; 
+import { GameOverUI } from './GameOverUI';  
 import { ScoreManager } from './ScoreManager';
+import { WinUI } from './WinUI';
 const { ccclass, property } = _decorator;
 
 @ccclass('Player')
@@ -11,6 +12,9 @@ export class Player extends Component {
 
     @property(Animation)
     anim: Animation | null = null;          // анимация персонажа
+
+    @property(Node)
+    winPanel: Node | null = null;  // 
 
     @property(ScoreManager)
     scoreManager: ScoreManager | null = null;
@@ -94,7 +98,11 @@ onJump(event: EventTouch | EventMouse) {
                 }
             }
         }
-    }
+        if (otherName === 'PoliceFinishFront') {  // 
+        this.winScreen();  // победа!
+        return;
+     }
+}
 
     private takeDamage() {
         if (this.isInvulnerable) return;
@@ -138,6 +146,32 @@ private gameOver() {
 
     if (this.anim) {
         this.anim.play('GopIdleAnim');
+    }
+}
+
+
+private winScreen() {
+    console.log("WIN!");  // для дебага
+
+    // остановить игру
+    this.isGameOver = true;  // используем тот же флаг
+    GameManager.gameStarted = false;
+    this.isJumping = false;
+    this.jumpVelocity = 0;
+
+    // показать WinPanel
+    if (this.winPanel) {
+        this.winPanel.active = true;
+
+        const ui = this.winPanel.getComponent(WinUI);
+        if (ui) {
+            ui.show();  // анимация счёта
+        }
+    }
+
+    // idle анимация
+    if (this.anim) {
+        this.anim.play('GopIdleAnim');  // или специальную "victory anim"
     }
 }
 

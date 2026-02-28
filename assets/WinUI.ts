@@ -2,15 +2,14 @@ import { _decorator, Component, Label, tween } from 'cc';
 
 const { ccclass, property } = _decorator;
 
-@ccclass('GameOverUI')
-export class GameOverUI extends Component {
+@ccclass('WinUI')
+export class WinUI extends Component {
 
     @property(Label)
-    scoreLabel: Label | null = null;          // лейбл в панели Game Over
+    scoreLabel: Label | null = null;          // лейбл в панели 
 
     @property(Label)
-    hudScoreLabel: Label | null = null;       
-
+    hudScoreLabel: Label | null = null;     
     start() {
         this.node.active = false;
     }
