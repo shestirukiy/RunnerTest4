@@ -2747,6 +2747,7 @@
     "__type__": "2daaarEdD9O9aZV+D/bexim",
     "_name": "",
     "_objFlags": 0,
+    "__editorExtras__": {},
     "node": {
       "__id__": 65
     },
@@ -2793,7 +2794,7 @@
         "__id__": 114
       }
     ],
-    "_active": true,
+    "_active": false,
     "_components": [
       {
         "__id__": 117
@@ -3951,9 +3952,9 @@
     "_far": 2000,
     "_color": {
       "__type__": "cc.Color",
-      "r": 0,
-      "g": 0,
-      "b": 0,
+      "r": 255,
+      "g": 255,
+      "b": 255,
       "a": 255
     },
     "_depth": 1,
@@ -8883,6 +8884,7 @@
     "__type__": "06854uh6BhMIJ+BdVM7m0ka",
     "_name": "",
     "_objFlags": 0,
+    "__editorExtras__": {},
     "node": {
       "__id__": 333
     },

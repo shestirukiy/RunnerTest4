@@ -1,4 +1,4 @@
-import { _decorator, Component, Node, Vec3, Label, input, Input, EventMouse, Animation, Collider2D, Contact2DType, IPhysics2DContact } from 'cc';
+import { _decorator, Component, Node, Vec3, Label, input, Input, EventMouse, EventTouch, Animation, Collider2D, Contact2DType, IPhysics2DContact } from 'cc';
 import { GameManager } from './GameManager'; // путь к GameManager.ts
 import { GameOverUI } from './GameOverUI';   // импорт класса UI
 const { ccclass, property } = _decorator;
@@ -34,7 +34,8 @@ export class Player extends Component {
         this.groundY = this.node.position.y;
 
         // подписка на клик мыши
-        input.on(Input.EventType.MOUSE_DOWN, this.onMouseDown, this);
+    input.on(Input.EventType.MOUSE_DOWN, this.onJump, this);
+    input.on(Input.EventType.TOUCH_START, this.onJump, this);
 
         // дефолтная анимация Idle
         if (this.anim) this.anim.play('GopIdleAnim');
@@ -46,20 +47,20 @@ export class Player extends Component {
         }
     }
 
-    onMouseDown(event: EventMouse) {
-        // первый клик запускает игру
-        if (this.isGameOver) return;
-        if (!GameManager.gameStarted) {
-            GameManager.gameStarted = true;
-        }
-
-        // прыжок игрока
-        if (!this.isJumping && !this.isInDamage) {
-            this.isJumping = true;
-            this.jumpVelocity = Math.sqrt(2 * 2000 * this.jumpHeight);
-            if (this.anim) this.anim.play('GopJumpAnim');
-        }
+onJump(event: EventTouch | EventMouse) {
+    // первый тап/клик запускает игру
+    if (this.isGameOver) return;
+    if (!GameManager.gameStarted) {
+        GameManager.gameStarted = true;
     }
+
+    // прыжок игрока
+    if (!this.isJumping && !this.isInDamage) {
+        this.isJumping = true;
+        this.jumpVelocity = Math.sqrt(2 * 2000 * this.jumpHeight);
+        if (this.anim) this.anim.play('GopJumpAnim');
+    }
+}
 
     onBeginContact(selfCollider: Collider2D, otherCollider: Collider2D, contact: IPhysics2DContact | null) {
         const otherName = otherCollider.node.name;
@@ -171,7 +172,8 @@ export class Player extends Component {
 
     onDestroy() {
         // отписка от событий
-        input.off(Input.EventType.MOUSE_DOWN, this.onMouseDown, this);
+    input.off(Input.EventType.MOUSE_DOWN, this.onJump, this);
+    input.off(Input.EventType.TOUCH_START, this.onJump, this);
         const collider = this.getComponent(Collider2D);
         if (collider) collider.off(Contact2DType.BEGIN_CONTACT, this.onBeginContact, this);
     }
