@@ -24,7 +24,8 @@
     "removeImageInBundle": true,
     "removeSpriteAtlasInBundle": true,
     "compressSettings": {
-      "useCompressTexture": true
+      "useCompressTexture": true,
+      "presetId": "transparent"
     },
     "textureSetting": {
       "wrapModeS": "clamp-to-edge",
