@@ -72,7 +72,6 @@ export class Coin extends Component {
             })
             .start();
     }
-
     onDestroy() {
         const collider = this.getComponent(Collider2D);
         if (collider) {

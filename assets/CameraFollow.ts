@@ -1,4 +1,4 @@
-import { _decorator, Component, Node, Vec3 } from 'cc';
+import { _decorator, Component, Node, Vec3, isValid  } from 'cc';
 const { ccclass, property } = _decorator;
 
 @ccclass('CameraFollow')
@@ -10,7 +10,10 @@ export class CameraFollow extends Component {
     @property
     offsetX: number = 2000; // постоянное смещение по X
 
-    private startY: number = 0; // фиксированный Y камеры
+    @property
+    offsetY: number = 0;    // постоянное смещение по Y (относительно начальной позиции камеры)
+
+    private startY: number = 0; // фиксированный Y камеры (начальный)
 
     start() {
         if (this.node) {
@@ -19,17 +22,16 @@ export class CameraFollow extends Component {
     }
 
     update() {
-        if (this.target) {
-            const targetPos = this.target.position;
+    if (!this.target || !isValid(this.target)) return;
 
-            // камера повторяет X + смещение, Y остаётся фиксированным
-            this.node.setPosition(
-                new Vec3(
-                    targetPos.x + this.offsetX,
-                    this.startY,
-                    this.node.position.z
+    const targetPos = this.target.position;
+
+    this.node.setPosition(
+        new Vec3(
+            targetPos.x + this.offsetX,
+            this.startY + this.offsetY,
+            this.node.position.z
                 )
-            );
-        }
-    }
+        );
+     }
 }

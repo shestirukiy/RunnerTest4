@@ -203,6 +203,7 @@ private winScreen() {
         this.node.setPosition(new Vec3(newX, pos.y, pos.z));
     }
 
+
     onDestroy() {
         // отписка от событий
     input.off(Input.EventType.MOUSE_DOWN, this.onJump, this);
