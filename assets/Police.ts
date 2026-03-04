@@ -24,7 +24,7 @@ export class Player extends Component {
     }
 
    update(deltaTime: number) {
-    if (!GameManager.gameStarted) return; // ❌ пока не стартанули, враг стоит
+if (!GameManager.gameStarted || GameManager.isGamePaused || this.isDead) return;
 
     const myX = this.node.worldPosition.x;
     const targetX = this.target.worldPosition.x;

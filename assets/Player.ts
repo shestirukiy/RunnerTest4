@@ -3,6 +3,7 @@ import { GameManager } from './GameManager';
 import { GameOverUI } from './GameOverUI';  
 import { ScoreManager } from './ScoreManager';
 import { WinUI } from './WinUI';
+import { isGamePaused } from './GameManager';
 const { ccclass, property } = _decorator;
 
 @ccclass('Player')
@@ -22,6 +23,9 @@ export class Player extends Component {
     @property(Node)
     gameOverPanel: Node | null = null;      // нода панели Game Over
 
+    @property(Node)
+    jumpOverlay: Node | null = null;
+
     @property jumpHeight = 150;              // высота прыжка
     @property([Node])
     hearts: Node[] = [];                     // массив сердечек
@@ -37,10 +41,11 @@ export class Player extends Component {
     private isInvulnerable = false;
     private damageHandlerAttached = false; // защита от повторного слушателя
     private isGameOver: boolean = false;
+    private isGamePaused: boolean = true;
+    private canJump: boolean = false;
 
     start() {
         this.groundY = this.node.position.y;
-
         // подписка на клик мыши
     input.on(Input.EventType.MOUSE_DOWN, this.onJump, this);
     input.on(Input.EventType.TOUCH_START, this.onJump, this);
@@ -56,52 +61,90 @@ export class Player extends Component {
     }
 
 onJump(event: EventTouch | EventMouse) {
-    // первый тап/клик запускает игру
-    if (this.isGameOver) return;
-    if (!GameManager.gameStarted) {
-        GameManager.gameStarted = true;
-    }
 
-    // прыжок игрока
+    if (this.isGameOver) return;
+    if (!GameManager.gameStarted) return;
+    if (!this.canJump) return; // 🔥 блок первого клика
+
     if (!this.isJumping && !this.isInDamage) {
+
         this.isJumping = true;
         this.jumpVelocity = Math.sqrt(2 * 2000 * this.jumpHeight);
-        if (this.anim) this.anim.play('GopJumpAnim');
+
+        if (this.anim) {
+            this.anim.play('GopJumpAnim');
+        }
     }
 }
 
-    onBeginContact(selfCollider: Collider2D, otherCollider: Collider2D, contact: IPhysics2DContact | null) {
-        const otherName = otherCollider.node.name;
+jumpFromOverlay() {
+    if (!this.isJumping && !this.isInDamage) {
+        this.isJumping = true;
+        this.jumpVelocity = Math.sqrt(2 * 2000 * this.jumpHeight);
 
-        // контакт с врагом → DAMAGE
-        if (otherName === 'PoliceEnemy' && !this.isInDamage) {
-            this.takeDamage();
+        if (this.anim) {
+            this.anim.play('GopJumpAnim');
+        }
+    }
+}
 
-            this.isInDamage = true;
+onBeginContact(selfCollider: Collider2D, otherCollider: Collider2D, contact: IPhysics2DContact | null) {
+    const otherName = otherCollider.node.name;
 
-            if (this.anim) {
-                this.anim.play('GopDamageAnim');
+    // контакт с врагом → DAMAGE
+    if (otherName === 'PoliceEnemy' && !this.isInDamage) {
+        this.takeDamage();
+        this.isInDamage = true;
 
-                // защита от повторного слушателя
-                if (!this.damageHandlerAttached) {
-                    const finishedHandler = () => {
-                        // возвращаем бег только если игра не закончена
-                        if (!this.isGameOver && this.anim) {
-                            this.anim.play('GopRunAnim');
-                        }
-                        this.isInDamage = false;
-                        this.anim!.off(Animation.EventType.FINISHED, finishedHandler);
-                        this.damageHandlerAttached = false;
-                    };
-                    this.anim.on(Animation.EventType.FINISHED, finishedHandler);
-                    this.damageHandlerAttached = true;
-                }
+        if (this.anim) {
+            this.anim.play('GopDamageAnim');
+
+            if (!this.damageHandlerAttached) {
+                const finishedHandler = () => {
+                    if (!this.isGameOver && this.anim) {
+                        this.anim.play('GopRunAnim');
+                    }
+                    this.isInDamage = false;
+                    this.anim!.off(Animation.EventType.FINISHED, finishedHandler);
+                    this.damageHandlerAttached = false;
+                };
+                this.anim.on(Animation.EventType.FINISHED, finishedHandler);
+                this.damageHandlerAttached = true;
             }
         }
-        if (otherName === 'PoliceFinishFront') {  // 
-        this.winScreen();  // победа!
+    }
+
+    // контакт с финишем
+    if (otherName === 'PoliceFinishFront') {
+        this.winScreen();
         return;
-     }
+    }
+
+    // контакт с PauseTrigger
+    if (otherName === 'PauseTrigger') {
+        // ставим игру на паузу
+        GameManager.isGamePaused = true;
+
+        // показываем overlay
+        if (this.jumpOverlay) {
+            this.jumpOverlay.active = true;
+        }
+
+        // подписка на клик по Overlay для снятия паузы
+        if (this.jumpOverlay) {
+            const clickHandler = () => {
+                this.jumpOverlay!.active = false;
+                GameManager.isGamePaused = false;
+                input.off(Input.EventType.TOUCH_START, clickHandler, this);
+                input.off(Input.EventType.MOUSE_DOWN, clickHandler, this);
+            };
+
+            input.on(Input.EventType.TOUCH_START, clickHandler, this);
+            input.on(Input.EventType.MOUSE_DOWN, clickHandler, this);
+        }
+
+        return;
+    }
 }
 
     private takeDamage() {
@@ -134,6 +177,12 @@ private gameOver() {
     GameManager.gameStarted = false;
     this.isJumping = false;
     this.jumpVelocity = 0;
+
+        //  ОТПИСКА ОТ КОЛЛИЗИЙ
+    const collider = this.getComponent(Collider2D);
+    if (collider) {
+        collider.off(Contact2DType.BEGIN_CONTACT, this.onBeginContact, this);
+    }
 
     if (this.gameOverPanel) {
         this.gameOverPanel.active = true;
@@ -175,33 +224,33 @@ private winScreen() {
     }
 }
 
-    update(deltaTime: number) {
-        // если игра не стартовала или конец игры → ничего не делаем
-        if (!GameManager.gameStarted || this.isGameOver) return;
+update(deltaTime: number) {
+    if (!GameManager.gameStarted || this.isGameOver || GameManager.isGamePaused) return;
 
-        // движение вправо
-        let pos = this.node.position;
-        let newX = pos.x + this.speedX * deltaTime;
+    let pos = this.node.position;
+    let newX = pos.x + this.speedX * deltaTime;
 
-        // прыжок
-        if (this.isJumping) {
-            pos.y += this.jumpVelocity * deltaTime;
-            this.jumpVelocity -= 2000 * deltaTime;
-
-            if (pos.y <= this.groundY) {
-                pos.y = this.groundY;
-                this.isJumping = false;
-                this.jumpVelocity = 0;
-
-                // возврат к бегу, если не в режиме DAMAGE
-                if (this.anim && !this.isInDamage) {
-                    this.anim.play('GopRunAnim');
-                }
-            }
+    // 🔥 ВКЛЮЧАЕМ БЕГ, ЕСЛИ ОН НЕ ПРЫГАЕТ
+    if (!this.isJumping && !this.isInDamage) {
+        const current = this.anim?.getState('GopRunAnim');
+        if (this.anim && (!current || !current.isPlaying)) {
+            this.anim.play('GopRunAnim');
         }
-
-        this.node.setPosition(new Vec3(newX, pos.y, pos.z));
     }
+
+    if (this.isJumping) {
+        pos.y += this.jumpVelocity * deltaTime;
+        this.jumpVelocity -= 2000 * deltaTime;
+
+        if (pos.y <= this.groundY) {
+            pos.y = this.groundY;
+            this.isJumping = false;
+            this.jumpVelocity = 0;
+        }
+    }
+
+    this.node.setPosition(new Vec3(newX, pos.y, pos.z));
+}
 
 
     onDestroy() {
